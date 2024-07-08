@@ -6,3 +6,13 @@ content-type: application/json
     "email": "carlos4@carlos.com.br",
     "password": "super secure password"
 }
+
+###
+
+POST http://localhost:3001/auth/login
+content-type: application/json
+
+{
+    "email": "carlos4@carlos.com.br",
+    "password": "super secure password"
+}
