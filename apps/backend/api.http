@@ -16,3 +16,7 @@ content-type: application/json
     "email": "carlos4@carlos.com.br",
     "password": "super secure password"
 }
+
+###
+
+GET http://localhost:3001/user/598f2de2-e7e3-48b2-a857-f606157ffe41
