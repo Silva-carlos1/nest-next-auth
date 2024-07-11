@@ -2,6 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'src/lib/prisma/prisma.service';
 import { hash } from 'bcrypt';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UserService {
@@ -29,6 +30,25 @@ export class UserService {
     return { name, email };
   }
 
+  async findOrCreateUserByOAuth(createUserDto: CreateUserDto): Promise<User> {
+    let user = await this.prismaService.user.findUnique({
+      where: {
+        email: createUserDto.email,
+      },
+    });
+
+    if (!user) {
+      user = await this.prismaService.user.create({
+        data: {
+          name: createUserDto.name,
+          email: createUserDto.email,
+          password: null,
+        },
+      });
+    }
+    return user;
+  }
+
   async findByEmail(email: string) {
     return await this.prismaService.user.findUnique({
       where: {
@@ -44,6 +64,6 @@ export class UserService {
       },
     });
 
-    return { name, email };
+    return { id, name, email };
   }
 }

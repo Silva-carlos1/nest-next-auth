@@ -3,6 +3,7 @@ import { LoginDto } from './dto/auth.dto';
 import { UserService } from 'src/user/user.service';
 import { compare } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,31 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
 
+    return this.generateJwtToken(user);
+  }
+
+  async googleLogin({ Name, email }) {
+    const user = await this.userService.findOrCreateUserByOAuth({
+      name: Name,
+      email: email,
+    });
+
+    return await this.generateJwtToken(user as User);
+  }
+
+  async validateUserPassword(loginDto: LoginDto) {
+    const user = await this.userService.findByEmail(loginDto.email);
+    if (user && (await compare(loginDto.password, user.password))) {
+      return {
+        ...user,
+        password: undefined,
+      };
+    }
+
+    throw new UnauthorizedException();
+  }
+
+  async generateJwtToken(user: User) {
     const payload = {
       username: user.email,
       sub: user.id,
@@ -38,20 +64,7 @@ export class AuthService {
     };
   }
 
-  async validateUser(loginDto: LoginDto) {
-    const user = await this.userService.findByEmail(loginDto.email);
-    if (user && (await compare(loginDto.password, user.password))) {
-      return {
-        ...user,
-        password: undefined,
-      };
-    }
-
-    throw new UnauthorizedException();
-  }
-
   async refreshToken(user: any) {
-    console.log(user);
     const payload = {
       username: user.email,
       sub: user.id,
