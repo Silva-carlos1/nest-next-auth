@@ -1,3 +1,4 @@
+// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/auth.dto';
 import { UserService } from 'src/user/user.service';
@@ -12,20 +13,22 @@ export class AuthService {
   ) {}
 
   async login(loginDto: LoginDto) {
-    const user = await this.ValidateUser(loginDto);
+    const user = await this.userService.findByEmail(loginDto.email);
 
     const payload = {
       username: user.email,
-      sub: {
-        name: user.name,
-      },
+      sub: user.id,
     };
 
     return {
-      user,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
       backendTokens: {
         accessToken: await this.jwtService.signAsync(payload, {
-          expiresIn: '20s',
+          expiresIn: '1h',
           secret: process.env.JWT_TOKEN,
         }),
         refreshToken: await this.jwtService.signAsync(payload, {
@@ -36,29 +39,32 @@ export class AuthService {
     };
   }
 
-  async ValidateUser(loginDto: LoginDto) {
+  async validateUser(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
     if (user && (await compare(loginDto.password, user.password))) {
-      const { name, email } = user;
-      return { name, email };
+      return {
+        ...user,
+        password: undefined,
+      };
     }
 
     throw new UnauthorizedException();
   }
 
   async refreshToken(user: any) {
+    console.log(user);
     const payload = {
       username: user.email,
-      sub: user.sub,
+      sub: user.id,
     };
 
     return {
       backendTokens: {
-        acessToken: await this.jwtService.signAsync(payload, {
-          expiresIn: '20s',
+        accessToken: await this.jwtService.signAsync(payload, {
+          expiresIn: '1h',
           secret: process.env.JWT_TOKEN,
         }),
-        RefreshToken: await this.jwtService.signAsync(payload, {
+        refreshToken: await this.jwtService.signAsync(payload, {
           expiresIn: '7d',
           secret: process.env.JWT_REFRESH_TOKEN,
         }),
